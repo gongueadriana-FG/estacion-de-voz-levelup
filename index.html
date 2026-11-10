@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estación de voz · LEVEL UP! English en Boyacá</title>
+<style>
+  /* Estación de voz: una sola columna, pasos numerados, un botón grande para grabar. */
+  :root {
+    --azul: #0A4F78; --azul-2: #0D6290; --turquesa: #00A9B2; --amarillo: #F5B921; --naranja: #E8731B;
+    --bg: #EAF5F7; --tarjeta: #FFFFFF; --texto: #1E3A4C; --suave: #4A6272; --borde: #CFE3E8;
+    --bien: #1E7A4C; --bien-bg: #DDF3E6; --mal: #B3402A; --mal-bg: #FBE3DC; --medio-bg: #FFF1CC; --medio: #8A6200;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0B2233; --tarjeta: #12354C; --texto: #EAF5F7; --suave: #A9C4D0; --borde: #1F4B66;
+      --bien: #7FE0AE; --bien-bg: #17452F; --mal: #FFAF9A; --mal-bg: #4A2318; --medio-bg: #4A3A0E; --medio: #F5D77A; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--texto);
+    font: 18px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+  .envoltura { max-width: 760px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left, 0px)) 60px; display: grid; gap: 18px; }
+  header { background: var(--azul); color: #fff; border-radius: 20px; padding: 22px 24px; }
+  header p { margin: 0; color: #CDEBF0; font-size: 16px; }
+  header h1 { margin: 2px 0 6px; font-size: 28px; line-height: 1.15; letter-spacing: .2px; }
+  header .marca { color: var(--amarillo); font-weight: 700; }
+  section { background: var(--tarjeta); border: 2px solid var(--borde); border-radius: 18px; padding: 18px 20px; display: grid; gap: 12px; min-width: 0; }
+  h2 { margin: 0; font-size: 19px; display: flex; gap: 10px; align-items: center; }
+  .paso { background: var(--amarillo); color: #3A2A00; width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; font-weight: 800; font-size: 16px; flex: none; }
+  .fila { display: flex; flex-wrap: wrap; gap: 10px; }
+  button { font: inherit; font-weight: 700; border-radius: 14px; border: 2px solid var(--azul); background: var(--tarjeta); color: var(--azul);
+    padding: 12px 18px; cursor: pointer; min-height: 48px; }
+  button:hover { background: #E3F2F6; }
+  @media (prefers-color-scheme: dark) { button { color: #EAF5F7; border-color: #5BB3D0; } button:hover { background: #1A4560; } }
+  button[aria-pressed="true"] { background: var(--azul); color: #fff; border-color: var(--azul); }
+  button:focus-visible, input:focus-visible { outline: 4px solid var(--amarillo); outline-offset: 2px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .frase { background: var(--bg); border-radius: 14px; padding: 16px 18px; font-size: 26px; font-weight: 700; line-height: 1.3; color: var(--texto); overflow-wrap: anywhere; }
+  .frase .palabra { display: inline-block; margin: 2px 4px 2px 0; padding: 0 6px; border-radius: 8px; }
+  .palabra.ok { background: var(--bien-bg); color: var(--bien); }
+  .palabra.no { background: var(--mal-bg); color: var(--mal); text-decoration: underline wavy; }
+  .tip { color: var(--suave); font-size: 16px; margin: 0; }
+  .grabar { background: var(--naranja); border-color: var(--naranja); color: #fff; font-size: 22px; padding: 16px 26px; min-height: 60px; }
+  .grabar:hover { background: #D1650F; }
+  .grabar.activo { background: #B3402A; border-color: #B3402A; animation: pulso 1s ease-in-out infinite; }
+  @keyframes pulso { 50% { box-shadow: 0 0 0 10px rgba(179,64,42,.25); } }
+  @media (prefers-reduced-motion: reduce) { .grabar.activo { animation: none; } }
+  .oido { min-height: 28px; color: var(--suave); font-style: italic; overflow-wrap: anywhere; }
+  .resultado { display: grid; gap: 12px; }
+  .puntaje { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .puntaje .num { font-size: 56px; font-weight: 800; line-height: 1; }
+  .puntaje .de { color: var(--suave); font-size: 20px; }
+  .banda { padding: 6px 14px; border-radius: 30px; font-weight: 700; font-size: 17px; }
+  .banda.alta { background: var(--bien-bg); color: var(--bien); }
+  .banda.media { background: var(--medio-bg); color: var(--medio); }
+  .banda.baja { background: var(--mal-bg); color: var(--mal); }
+  .codigo-caja { border: 3px dashed var(--turquesa); border-radius: 16px; padding: 14px 18px; display: grid; gap: 6px; background: var(--bg); }
+  .codigo { font: 800 40px/1.1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 3px; color: var(--azul); }
+  @media (prefers-color-scheme: dark) { .codigo { color: var(--amarillo); } }
+  .aviso { background: var(--medio-bg); color: var(--medio); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+  .error { background: var(--mal-bg); color: var(--mal); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+  footer { font-size: 15px; color: var(--suave); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="envoltura">
+  <header>
+    <p><span class="marca">LEVEL UP!</span> English en Boyacá</p>
+    <h1>Estación de voz</h1>
+    <p>Lee la frase en voz alta, mira tu puntaje y copia el código al juego.</p>
+  </header>
+
+  <div id="noSoporte" class="error" hidden>
+    Este navegador no puede escuchar tu voz. Abre esta página en Chrome o Edge (computador o celular Android).
+    Si no es posible, en el juego usa el botón “Sin internet: con compañero/a”.
+  </div>
+
+  <section aria-labelledby="t1">
+    <h2 id="t1"><span class="paso">1</span> Elige tu nivel y tu actividad</h2>
+    <div class="fila" id="niveles" role="group" aria-label="Nivel"></div>
+    <div class="fila" id="actividades" role="group" aria-label="Actividad"></div>
+  </section>
+
+  <section aria-labelledby="t2">
+    <h2 id="t2"><span class="paso">2</span> Lee esta frase en voz alta</h2>
+    <div class="frase" id="frase" aria-live="polite"></div>
+    <p class="tip" id="tip"></p>
+    <div class="fila">
+      <button type="button" id="btnModelo">Escuchar modelo</button>
+      <button type="button" id="btnGrabar" class="grabar">Grabar mi voz</button>
+    </div>
+    <div class="oido" id="oido" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t3" id="seccionResultado" hidden>
+    <h2 id="t3"><span class="paso">3</span> Tu resultado</h2>
+    <div class="resultado" aria-live="polite">
+      <div class="puntaje"><span class="num" id="num">0</span><span class="de">de 100</span><span class="banda" id="banda"></span></div>
+      <p class="tip" id="mensaje"></p>
+      <div class="fila"><button type="button" id="btnMiVoz" hidden>Escuchar mi voz</button><button type="button" id="btnOtra">Intentar otra vez</button></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t4" id="seccionCodigo" hidden>
+    <h2 id="t4"><span class="paso">4</span> Escribe este código en el juego</h2>
+    <div class="codigo-caja">
+      <div class="codigo" id="codigo" aria-label="Código para el juego"></div>
+      <p class="tip">Sirve solo para <b id="paraQue"></b>. Si no pasas el puntaje mínimo, intenta otra vez.</p>
+    </div>
+    <div class="fila"><button type="button" id="btnCopiar">Copiar código</button></div>
+    <div id="copiado" class="aviso" hidden>Código copiado.</div>
+  </section>
+
+  <footer>
+    Puntaje mínimo para aprobar en el juego: <b id="umbral"></b> de 100. La página compara lo que dijiste con la frase;
+    no guarda ni envía tu voz a ningún servidor propio.
+  </footer>
+</div>
+
+<script id="nucleo">
+// ---- Núcleo: puntaje y código (se prueba aparte; no usa la pantalla) ----
+const ACTIVIDADES = [
+ {
+  "key": "1.5",
+  "nivel": 1,
+  "escenario": "Market Day",
+  "titulo": "La Plaza de Mercado",
+  "npc": "Doña Rosa",
+  "actividad": 5,
+  "etiqueta": "Reading aloud",
+  "frase": "I like soup. I want two potatoes and one onion.",
+  "tip": "“Potatoes” suena como “po-TEI-tos”. Lee despacio."
+ },
+ {
+  "key": "1.6",
+  "nivel": 1,
+  "escenario": "Market Day",
+  "titulo": "La Plaza de Mercado",
+  "npc": "Doña Rosa",
+  "actividad": 6,
+  "etiqueta": "Speaking",
+  "frase": "I want two apples, please.",
+  "tip": "“Two” suena como “tu”. Habla despacio y claro."
+ },
+ {
+  "key": "2.5",
+  "nivel": 2,
+  "escenario": "The Farm",
+  "titulo": "La Finca de Don Pedro",
+  "npc": "Don Pedro",
+  "actividad": 5,
+  "etiqueta": "Reading aloud",
+  "frase": "I have a farm. The cow is white and black.",
+  "tip": "“Farm” suena como “farm” con la r suave."
+ },
+ {
+  "key": "2.6",
+  "nivel": 2,
+  "escenario": "The Farm",
+  "titulo": "La Finca de Don Pedro",
+  "npc": "Don Pedro",
+  "actividad": 6,
+  "etiqueta": "Speaking",
+  "frase": "I have two cows and one horse.",
+  "tip": "“Horse” suena parecido a “jors”. Dilo despacio."
+ },
+ {
+  "key": "3.5",
+  "nivel": 3,
+  "escenario": "My School",
+  "titulo": "La Escuela Rural",
+  "npc": "Profe Ana",
+  "actividad": 5,
+  "etiqueta": "Reading aloud",
+  "frase": "This is my classroom. I have a book and a pencil.",
+  "tip": "“Pencil” suena como “PEN-sil”."
+ },
+ {
+  "key": "3.6",
+  "nivel": 3,
+  "escenario": "My School",
+  "titulo": "La Escuela Rural",
+  "npc": "Profe Ana",
+  "actividad": 6,
+  "etiqueta": "Speaking",
+  "frase": "Hello, teacher! I am in grade six.",
+  "tip": "“Grade” suena como “greid”. Habla despacio."
+ },
+ {
+  "key": "4.5",
+  "nivel": 4,
+  "escenario": "My Family",
+  "titulo": "Mi Familia",
+  "npc": "Abuela Lucía",
+  "actividad": 5,
+  "etiqueta": "Reading aloud",
+  "frase": "My father is José. My brother is nine.",
+  "tip": "“Brother” suena como “BRA-der”."
+ },
+ {
+  "key": "4.6",
+  "nivel": 4,
+  "escenario": "My Family",
+  "titulo": "Mi Familia",
+  "npc": "Abuela Lucía",
+  "actividad": 6,
+  "etiqueta": "Speaking",
+  "frase": "This is my mother. I love my family.",
+  "tip": "“Family” suena como “FA-mi-li”."
+ }
+];
+const SALT = "boyaca-2026";
+const UMBRAL = 60;
+
+const NUMEROS = { "0":"zero","1":"one","2":"two","3":"three","4":"four","5":"five","6":"six","7":"seven","8":"eight","9":"nine",
+  "10":"ten","11":"eleven","12":"twelve","13":"thirteen","14":"fourteen","15":"fifteen","16":"sixteen","17":"seventeen",
+  "18":"eighteen","19":"nineteen","20":"twenty","30":"thirty","40":"forty","50":"fifty" };
+
+function normalizar(texto) {
+  const limpio = String(texto || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[’']/g, "").replace(/[^a-z0-9\s]/g, " ");
+  const palabras = [];
+  for (const p of limpio.split(/\s+/).filter(Boolean)) {
+    if (p === "im") { palabras.push("i", "am"); continue; }
+    palabras.push(NUMEROS[p] || p);
+  }
+  return palabras;
+}
+
+// Subsecuencia común más larga entre la frase y lo que se oyó.
+function alinear(frase, oido) {
+  const n = frase.length, m = oido.length;
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = 1; i <= n; i++)
+    for (let j = 1; j <= m; j++)
+      dp[i][j] = frase[i - 1] === oido[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const acierto = new Array(n).fill(false);
+  let i = n, j = m;
+  while (i > 0 && j > 0) {
+    if (frase[i - 1] === oido[j - 1]) { acierto[i - 1] = true; i--; j--; }
+    else if (dp[i - 1][j] >= dp[i][j - 1]) i--; else j--;
+  }
+  return { largo: dp[n][m], acierto };
+}
+
+// Mejor puntaje (0-100) entre las alternativas que entregó el reconocimiento de voz.
+function puntuar(fraseMeta, alternativas) {
+  const frase = normalizar(fraseMeta);
+  let mejor = { puntaje: 0, acierto: frase.map(() => false), oido: "" };
+  for (const alt of alternativas) {
+    const oido = normalizar(alt);
+    if (!oido.length || !frase.length) continue;
+    const { largo, acierto } = alinear(frase, oido);
+    const p = largo / oido.length, r = largo / frase.length;
+    const f = p + r > 0 ? (2 * p * r) / (p + r) : 0;
+    const puntaje = Math.round(100 * f);
+    if (puntaje > mejor.puntaje) mejor = { puntaje, acierto, oido: alt };
+  }
+  return mejor;
+}
+
+// Misma cuenta que Logica.hashVoz en Roblox.
+function hashVoz(texto) {
+  let h = 17;
+  for (let i = 0; i < texto.length; i++) h = (h * 31 + texto.charCodeAt(i)) % 1000003;
+  return h;
+}
+function codigoVoz(clave, puntaje) {
+  const base = clave + "|" + puntaje + "|" + SALT;
+  return String(puntaje).padStart(3, "0") + String(hashVoz(base)).padStart(6, "0");
+}
+</script>
+
+<script>
+// ---- Pantalla ----
+const $ = (id) => document.getElementById(id);
+const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
+let nivel = ACTIVIDADES[0].nivel;
+let actual = ACTIVIDADES[0];
+let reconociendo = null, flujo = null, grabador = null, pedazos = [], urlAudio = null;
+
+$("umbral").textContent = UMBRAL;
+if (!Reconocimiento) { $("noSoporte").hidden = false; $("btnGrabar").disabled = true; }
+
+function pintarNiveles() {
+  const lista = [...new Set(ACTIVIDADES.map(a => a.nivel))];
+  $("niveles").replaceChildren(...lista.map(n => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "Nivel " + n; b.setAttribute("aria-pressed", String(n === nivel));
+    b.onclick = () => { nivel = n; actual = ACTIVIDADES.find(a => a.nivel === n); pintarNiveles(); pintarActividades(); pintarFrase(); };
+    return b;
+  }));
+}
+function pintarActividades() {
+  const lista = ACTIVIDADES.filter(a => a.nivel === nivel);
+  $("actividades").replaceChildren(...lista.map(a => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "Actividad " + a.actividad + " · " + a.etiqueta;
+    b.setAttribute("aria-pressed", String(a.key === actual.key));
+    b.onclick = () => { actual = a; pintarActividades(); pintarFrase(); };
+    return b;
+  }));
+}
+function pintarFrase(acierto) {
+  const caja = $("frase");
+  caja.replaceChildren();
+  const palabras = actual.frase.split(/\s+/);
+  const norm = normalizar(actual.frase);
+  palabras.forEach((p, i) => {
+    const s = document.createElement("span"); s.className = "palabra";
+    if (acierto) { s.classList.add(acierto[i] ? "ok" : "no"); s.textContent = (acierto[i] ? "✓ " : "✗ ") + p; }
+    else s.textContent = p;
+    caja.appendChild(s);
+  });
+  $("tip").textContent = actual.tip;
+  $("paraQue").textContent = "Nivel " + actual.nivel + " · Actividad " + actual.actividad + " (" + actual.etiqueta + ")";
+  if (!acierto) { $("seccionResultado").hidden = true; $("seccionCodigo").hidden = true; $("oido").textContent = ""; }
+}
+
+$("btnModelo").onclick = () => {
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(actual.frase);
+    u.lang = "en-US"; u.rate = 0.85;
+    speechSynthesis.speak(u);
+  } catch (e) { $("oido").textContent = "Este navegador no puede leer la frase en voz alta."; }
+};
+
+function detenerFlujo() { if (flujo) { flujo.getTracks().forEach(t => t.stop()); flujo = null; } }
+
+async function empezar() {
+  $("oido").textContent = "Escuchando… lee la frase.";
+  $("btnGrabar").classList.add("activo"); $("btnGrabar").textContent = "Detener";
+  $("btnMiVoz").hidden = true; pedazos = [];
+  try { // la grabación es solo para que el estudiante se escuche; si falla, el puntaje funciona igual
+    flujo = await navigator.mediaDevices.getUserMedia({ audio: true });
+    grabador = new MediaRecorder(flujo);
+    grabador.ondataavailable = (e) => pedazos.push(e.data);
+    grabador.onstop = () => {
+      if (urlAudio) URL.revokeObjectURL(urlAudio);
+      urlAudio = URL.createObjectURL(new Blob(pedazos, { type: grabador.mimeType || "audio/webm" }));
+      $("btnMiVoz").hidden = false; detenerFlujo();
+    };
+    grabador.start();
+  } catch (e) { grabador = null; }
+  const r = new Reconocimiento();
+  r.lang = "en-US"; r.interimResults = true; r.maxAlternatives = 5; r.continuous = false;
+  let alternativas = [], parcial = "";
+  r.onresult = (ev) => {
+    const res = ev.results[ev.results.length - 1];
+    parcial = res[0].transcript; $("oido").textContent = "Oí: “" + parcial + "”";
+    if (res.isFinal) { alternativas = Array.from(res).map(x => x.transcript); }
+  };
+  r.onerror = (ev) => {
+    const msg = ev.error === "not-allowed" ? "Permite el micrófono en el navegador y vuelve a intentar."
+      : ev.error === "no-speech" ? "No te escuché. Acércate al micrófono y habla más fuerte."
+      : ev.error === "network" ? "Se necesita internet para reconocer la voz." : "No se pudo escuchar (" + ev.error + ").";
+    $("oido").textContent = msg;
+  };
+  r.onend = () => {
+    $("btnGrabar").classList.remove("activo"); $("btnGrabar").textContent = "Grabar mi voz";
+    if (grabador && grabador.state !== "inactive") grabador.stop(); else detenerFlujo();
+    reconociendo = null;
+    if (!alternativas.length && parcial) alternativas = [parcial];
+    if (alternativas.length) mostrar(alternativas);
+  };
+  reconociendo = r; r.start();
+}
+
+function mostrar(alternativas) {
+  const { puntaje, acierto, oido } = puntuar(actual.frase, alternativas);
+  pintarFrase(acierto);
+  $("oido").textContent = "Oí: “" + (oido || alternativas[0]) + "”";
+  $("num").textContent = puntaje;
+  const banda = $("banda");
+  banda.className = "banda " + (puntaje >= 85 ? "alta" : puntaje >= UMBRAL ? "media" : "baja");
+  banda.textContent = puntaje >= 85 ? "¡Excelente!" : puntaje >= UMBRAL ? "¡Bien, aprobaste!" : "Casi, inténtalo otra vez";
+  $("mensaje").textContent = puntaje >= UMBRAL
+    ? "Las palabras marcadas con ✗ son las que puedes practicar."
+    : "Escucha el modelo, habla más despacio y claro, y vuelve a grabar.";
+  const codigo = codigoVoz(actual.key, puntaje);
+  $("codigo").textContent = codigo.slice(0, 3) + "-" + codigo.slice(3);
+  $("seccionResultado").hidden = false; $("seccionCodigo").hidden = false; $("copiado").hidden = true;
+  $("seccionResultado").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+$("btnGrabar").onclick = () => {
+  if (reconociendo) { reconociendo.stop(); return; }
+  empezar();
+};
+$("btnOtra").onclick = () => { pintarFrase(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+$("btnMiVoz").onclick = () => { if (urlAudio) new Audio(urlAudio).play(); };
+$("btnCopiar").onclick = async () => {
+  const texto = $("codigo").textContent;
+  try { await navigator.clipboard.writeText(texto); $("copiado").hidden = false; }
+  catch (e) { const rango = document.createRange(); rango.selectNodeContents($("codigo")); const s = getSelection(); s.removeAllRanges(); s.addRange(rango); $("copiado").textContent = "Selecciona y copia el código."; $("copiado").hidden = false; }
+};
+
+pintarNiveles(); pintarActividades(); pintarFrase();
+</script>
+</body>
+</html>
